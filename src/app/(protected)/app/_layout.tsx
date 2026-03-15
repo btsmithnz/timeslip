@@ -28,7 +28,7 @@ export default function AppTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="invoices"
         options={{
           title: "Invoices",
           tabBarIcon: ({ color }) => (
