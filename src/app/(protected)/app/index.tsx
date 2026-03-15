@@ -1,3 +1,4 @@
+import { useForm } from "@tanstack/react-form";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import dayjs from "dayjs";
@@ -9,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -27,6 +29,7 @@ import {
   TaskModalSubmitValues,
 } from "@/components/time/task-modal";
 import { Button } from "@/components/ui/button";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { InlineNotice } from "@/components/ui/inline-notice";
 import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
@@ -65,6 +68,12 @@ const EMPTY_MODAL_VALUES: TaskModalInitialValues = {
   projectId: "",
   startAt: null,
   endAt: null,
+};
+
+type QuickStartValues = {
+  title: string;
+  clientId: string;
+  projectId: string;
 };
 
 function getErrorMessage(error: unknown) {
@@ -121,6 +130,8 @@ export default function HomeScreen() {
   const [hasManualViewMode, setHasManualViewMode] = useState(false);
   const [nowMs, setNowMs] = useState(() => dayjs().valueOf());
   const [busy, setBusy] = useState(false);
+  const [creatingQuickClient, setCreatingQuickClient] = useState(false);
+  const [creatingQuickProject, setCreatingQuickProject] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modalState, setModalState] = useState<ModalState>({ visible: false });
 
@@ -206,6 +217,89 @@ export default function HomeScreen() {
   const defaultProjectClientId = defaultProject
     ? String(defaultProject.client)
     : defaultClientId;
+  const quickClientOptions = useMemo<ComboboxOption[]>(
+    () =>
+      clientOptions.map((client) => ({
+        value: client._id,
+        label: client.name,
+      })),
+    [clientOptions],
+  );
+  const quickStartForm = useForm({
+    defaultValues: {
+      title: "",
+      clientId: defaultProjectClientId,
+      projectId: defaultProjectId,
+    } satisfies QuickStartValues,
+    onSubmit: async ({ value }) => {
+      const title = value.title.trim();
+      if (!title) {
+        setErrorMessage("Task title is required.");
+        return;
+      }
+
+      if (!value.projectId) {
+        setErrorMessage("Select a project before starting the timer.");
+        return;
+      }
+
+      const project = (projects ?? []).find(
+        (item) => String(item._id) === value.projectId,
+      );
+      if (!project) {
+        setErrorMessage("Choose a valid project.");
+        return;
+      }
+
+      setBusy(true);
+      setErrorMessage(null);
+      try {
+        await createTask({
+          title,
+          projectId: project._id,
+          startAt: dayjs().valueOf(),
+        });
+        quickStartForm.setFieldValue("title", "");
+        quickStartForm.setFieldValue("clientId", String(project.client));
+        quickStartForm.setFieldValue("projectId", String(project._id));
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+      } finally {
+        setBusy(false);
+      }
+    },
+  });
+
+  useEffect(() => {
+    const currentClientId = quickStartForm.getFieldValue("clientId");
+    const currentProjectId = quickStartForm.getFieldValue("projectId");
+
+    let nextClientId = currentClientId;
+    if (
+      !nextClientId ||
+      !clientOptions.some((client) => client._id === nextClientId)
+    ) {
+      nextClientId = defaultProjectClientId;
+    }
+
+    const availableProjects = nextClientId
+      ? projectOptions.filter((project) => project.client === nextClientId)
+      : [];
+    let nextProjectId = currentProjectId;
+    if (
+      !nextProjectId ||
+      !availableProjects.some((project) => project._id === nextProjectId)
+    ) {
+      nextProjectId = availableProjects[0]?._id ?? "";
+    }
+
+    if (nextClientId !== currentClientId) {
+      quickStartForm.setFieldValue("clientId", nextClientId);
+    }
+    if (nextProjectId !== currentProjectId) {
+      quickStartForm.setFieldValue("projectId", nextProjectId);
+    }
+  }, [clientOptions, defaultProjectClientId, projectOptions, quickStartForm]);
 
   function openCreateModal(startAt: number, endAt?: number) {
     const safeStartAt = Number.isFinite(startAt)
@@ -545,23 +639,195 @@ export default function HomeScreen() {
               elevation: 3,
             }}
           >
-            <View className="flex-row flex-wrap items-center justify-between gap-4">
-              <Text
-                className="text-3xl"
-                style={{
-                  color: palette.text,
-                  fontFamily: Fonts.sans,
-                  fontWeight: "700",
+            <View className="flex-row flex-wrap items-end gap-3">
+              <quickStartForm.Field name="title">
+                {(field) => (
+                  <View className="min-w-64 flex-1 gap-2">
+                    <Text
+                      className="text-[11px] uppercase"
+                      style={{
+                        color: palette.muted,
+                        fontFamily: Fonts.mono,
+                        letterSpacing: 1.3,
+                      }}
+                    >
+                      Task
+                    </Text>
+                    <TextInput
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChangeText={field.handleChange}
+                      onSubmitEditing={() => void quickStartForm.handleSubmit()}
+                      placeholder="What are you working on?"
+                      placeholderTextColor={palette.muted}
+                      editable={!busy}
+                      className="min-h-11 rounded-xl border px-3.5 py-3 text-sm"
+                      style={{
+                        backgroundColor: palette.input,
+                        borderColor: palette.inputBorder,
+                        color: palette.text,
+                        fontFamily: Fonts.sans,
+                        fontWeight: "500",
+                      }}
+                    />
+                  </View>
+                )}
+              </quickStartForm.Field>
+
+              <quickStartForm.Subscribe selector={(state) => state.values}>
+                {(values) => {
+                  const availableProjects = projectOptions.filter(
+                    (project) =>
+                      values.clientId && project.client === values.clientId,
+                  );
+                  const quickProjectOptions: ComboboxOption[] =
+                    availableProjects.map((project) => ({
+                      value: project._id,
+                      label: project.name,
+                    }));
+
+                  return (
+                    <>
+                      <View className="w-full md:w-52" style={{ zIndex: 130 }}>
+                        <Combobox
+                          label="Client"
+                          value={values.clientId}
+                          options={quickClientOptions}
+                          placeholder="Select client"
+                          searchPlaceholder="Search clients..."
+                          emptyLabel="No clients found."
+                          disabled={busy}
+                          creating={creatingQuickClient}
+                          onChange={(nextClientId) => {
+                            if (busy) {
+                              return;
+                            }
+
+                            const firstProjectForClient = projectOptions.find(
+                              (project) => project.client === nextClientId,
+                            );
+                            const hasExistingProjectForClient =
+                              projectOptions.some(
+                                (project) =>
+                                  project.client === nextClientId &&
+                                  project._id === values.projectId,
+                              );
+
+                            quickStartForm.setFieldValue("clientId", nextClientId);
+                            quickStartForm.setFieldValue(
+                              "projectId",
+                              hasExistingProjectForClient
+                                ? values.projectId
+                                : (firstProjectForClient?._id ?? ""),
+                            );
+                          }}
+                          onCreate={async (input) => {
+                            if (busy) {
+                              return null;
+                            }
+
+                            setCreatingQuickClient(true);
+                            try {
+                              const client = await handleCreateClient(input);
+                              if (!client) {
+                                return null;
+                              }
+                              return {
+                                value: client._id,
+                                label: client.name,
+                              };
+                            } catch (error) {
+                              setErrorMessage(getErrorMessage(error));
+                              return null;
+                            } finally {
+                              setCreatingQuickClient(false);
+                            }
+                          }}
+                        />
+                      </View>
+
+                      <View className="w-full md:w-52" style={{ zIndex: 120 }}>
+                        <Combobox
+                          label="Project"
+                          value={values.projectId}
+                          options={quickProjectOptions}
+                          placeholder={
+                            values.clientId
+                              ? "Select project"
+                              : "Choose client first"
+                          }
+                          searchPlaceholder="Search projects..."
+                          emptyLabel={
+                            values.clientId
+                              ? "No projects found."
+                              : "Choose a client first."
+                          }
+                          disabled={!values.clientId || busy}
+                          creating={creatingQuickProject}
+                          onChange={(nextProjectId) => {
+                            if (busy) {
+                              return;
+                            }
+                            quickStartForm.setFieldValue("projectId", nextProjectId);
+                          }}
+                          onCreate={
+                            values.clientId
+                              ? async (input) => {
+                                  if (busy) {
+                                    return null;
+                                  }
+
+                                  setCreatingQuickProject(true);
+                                  try {
+                                    const project = await handleCreateProject(
+                                      values.clientId,
+                                      input,
+                                    );
+                                    if (!project) {
+                                      return null;
+                                    }
+                                    return {
+                                      value: project._id,
+                                      label: project.name,
+                                    };
+                                  } catch (error) {
+                                    setErrorMessage(getErrorMessage(error));
+                                    return null;
+                                  } finally {
+                                    setCreatingQuickProject(false);
+                                  }
+                                }
+                              : undefined
+                          }
+                        />
+                      </View>
+
+                      <Pressable
+                        className="h-11 w-11 items-center justify-center self-end rounded-full"
+                        style={({ pressed }) => ({
+                          backgroundColor: pressed ? palette.text : palette.accent,
+                          shadowColor: palette.shadow,
+                          shadowOpacity: 0.22,
+                          shadowRadius: 12,
+                          shadowOffset: { width: 0, height: 4 },
+                          elevation: 4,
+                          opacity: busy ? 0.7 : 1,
+                        })}
+                        disabled={busy}
+                        onPress={() => void quickStartForm.handleSubmit()}
+                        accessibilityRole="button"
+                        accessibilityLabel="Start timer"
+                      >
+                        <FontAwesome6
+                          name="play"
+                          size={13}
+                          color={palette.surfaceStrong}
+                        />
+                      </Pressable>
+                    </>
+                  );
                 }}
-              >
-                Timeslip
-              </Text>
-              <View className="w-full md:w-auto md:min-w-44">
-                <Button
-                  label="Start Timer"
-                  onPress={() => openCreateModal(dayjs().valueOf())}
-                />
-              </View>
+              </quickStartForm.Subscribe>
             </View>
             <View className="mt-3">
               <InlineNotice message={errorMessage} />
