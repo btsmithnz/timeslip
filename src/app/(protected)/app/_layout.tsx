@@ -1,26 +1,44 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform, useWindowDimensions } from "react-native";
+import { Platform, View, useWindowDimensions } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
+import { useColorPalette } from "@/hooks/use-color-palette";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function AppTabsLayout() {
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? "light"];
+  const tabPalette = Colors[colorScheme ?? "light"];
+  const palette = useColorPalette();
   const { width } = useWindowDimensions();
   const tabBarWidth = 140;
   const tabBarLeft = Math.max((width - tabBarWidth) / 2, 16);
 
   return (
     <Tabs
+      screenLayout={({ children }) => (
+        <View style={{ flex: 1, backgroundColor: palette.background }}>
+          <View
+            style={{
+              flex: 1,
+              width: "100%",
+              maxWidth: 1280,
+              alignSelf: "center",
+            }}
+          >
+            {children}
+          </View>
+        </View>
+      )}
       screenOptions={{
         tabBarActiveTintColor:
-          colorScheme === "dark" ? Colors.light.text : palette.tabIconSelected,
-        tabBarInactiveTintColor: palette.tabIconDefault,
+          colorScheme === "dark"
+            ? Colors.light.text
+            : tabPalette.tabIconSelected,
+        tabBarInactiveTintColor: tabPalette.tabIconDefault,
         tabBarActiveBackgroundColor: "#FFFFFF",
         headerShown: false,
         tabBarButton: HapticTab,

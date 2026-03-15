@@ -626,7 +626,7 @@ export default function HomeScreen() {
           paddingBottom: Math.max(insets.bottom + 20, 26),
         }}
       >
-        <View className="mx-auto w-full max-w-7xl gap-4">
+        <View className="gap-4">
           <View
             className="overflow-hidden rounded-3xl border px-5 py-5 md:px-6 md:py-6"
             style={{
