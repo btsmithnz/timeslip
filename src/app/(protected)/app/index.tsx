@@ -26,7 +26,7 @@ export default function HomeScreen() {
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
           Edit{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText>{" "}
+          <ThemedText type="defaultSemiBold">app/(protected)/app/index.tsx</ThemedText>{" "}
           to see changes. Press{" "}
           <ThemedText type="defaultSemiBold">
             {Platform.select({

@@ -13,10 +13,6 @@ import "../../global.css";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { authClient } from "@/lib/auth-client";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
 const convex = new ConvexReactClient(
   process.env.EXPO_PUBLIC_CONVEX_URL as string,
   {
@@ -32,11 +28,9 @@ export default function RootLayout() {
     <ConvexBetterAuthProvider client={convex} authClient={authClient}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(public)" options={{ headerShown: false }} />
+          <Stack.Screen name="(protected)" options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

@@ -24,6 +24,9 @@ This document guides AI coding agents working in this repository.
 ## Repository Layout
 - `src/app/`: Expo Router routes and layouts (currently partly template).
 - `src/components/`: Shared UI primitives and reusable components.
+- `src/components/ui/`: Reusable design-system-style primitives intended for use across auth, landing, and authenticated app surfaces.
+- `src/components/public/`: Components specific to the unauthenticated public shell (background, layout, status presentation, etc).
+- `src/components/nav/`: Navigation components when navigation deserves its own namespace.
 - `src/hooks/`: Shared hooks (`use-color-scheme`, `use-theme-color`, etc).
 - `src/lib/`: Client integrations such as auth client setup.
 - `src/constants/`: Shared constants/theme values.
@@ -52,18 +55,26 @@ This document guides AI coding agents working in this repository.
 - Use Expo Router file-based routing inside `src/app`.
 - Keep route components focused; extract reusable UI into `src/components`.
 - Keep provider setup in root layout (`src/app/_layout.tsx`) unless necessary.
-- Respect existing deep link scheme (`timeslip-app://`) unless explicitly changing auth/linking behavior.
+- Respect existing deep link scheme (`app.timeslip://`) unless explicitly changing auth/linking behavior.
 
 ## Styling and UI Rules
 - Use Uniwind class names for new styling work where feasible.
 - Build reusable visual primitives in `src/components` (or `src/components/ui`).
+- Put generic buttons, cards, inputs, notices, and similar building blocks in `src/components/ui` with reusable, non-feature-specific names.
+- Reserve `public`-scoped components/files for unauthenticated-shell concerns only; do not prefix generic UI primitives with `public` if they may be reused in the app.
 - Avoid one-off duplicated UI in route files; compose from shared components.
 - Ensure mobile and web compatibility for all UI changes.
 - Preserve light/dark mode behavior and theme-aware defaults.
 
+## Forms
+- Use `@tanstack/react-form` for new forms and when refactoring existing form state.
+- Prefer form-managed field state over multiple per-field `useState()` hooks.
+
 ## Component Architecture
 - Prefer small, composable, typed components.
 - Keep business logic out of purely presentational components.
+- Keep page-specific copy, composition, and form submission logic in route files unless it is clearly reusable.
+- Move shared palette/theme hooks into `src/hooks` rather than colocating them inside component bundles.
 - Use absolute imports via configured aliases (`@/*`, `@assets/*`).
 - Follow existing TypeScript style and strict typing.
 
