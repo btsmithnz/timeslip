@@ -28,10 +28,15 @@ export default defineSchema({
     endAt: v.optional(v.number()),
   }).index("by_project_startAt", ["project", "startAt"]),
   invoices: defineTable({
+    user: v.string(),
+    client: v.id("clients"),
+    project: v.optional(v.id("projects")),
+    startAt: v.number(),
+    endAt: v.number(),
     amount: v.number(),
     paidAt: v.optional(v.number()),
-    paymentInstruction: v.id("paymentInstructions"),
-  }),
+    paymentInstruction: v.optional(v.id("paymentInstructions")),
+  }).index("by_user", ["user"]),
   paymentInstructions: defineTable({
     instructions: v.string(),
     name: v.string(),
@@ -43,5 +48,5 @@ export default defineSchema({
     phone: v.optional(v.string()),
     website: v.optional(v.string()),
     user: v.string(), // Who owns the payment instruction
-  }),
+  }).index("by_user", ["user"]),
 });

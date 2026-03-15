@@ -1,126 +1,344 @@
-import { Image } from "expo-image";
-import { Platform, StyleSheet } from "react-native";
+import { FontAwesome6 } from "@expo/vector-icons";
+import {
+  useConvexAuth,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ExternalLink } from "@/components/external-link";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { Collapsible } from "@/components/ui/collapsible";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import {
+  InvoiceModal,
+  type InvoiceModalSubmitValues,
+} from "@/components/invoice/invoice-modal";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { InlineNotice } from "@/components/ui/inline-notice";
 import { Fonts } from "@/constants/theme";
+import { useColorPalette } from "@/hooks/use-color-palette";
+import { formatDateInput } from "@/lib/time";
+import { api } from "../../../../convex/_generated/api";
 
-export default function TabTwoScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}
-        >
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>
-        This app includes example code to help you get started.
-      </ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{" "}
-          <ThemedText type="defaultSemiBold">app/(protected)/app/index.tsx</ThemedText>{" "}
-          and{" "}
-          <ThemedText type="defaultSemiBold">app/(protected)/app/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in{" "}
-          <ThemedText type="defaultSemiBold">app/(protected)/app/_layout.tsx</ThemedText>{" "}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the
-          web version, press <ThemedText type="defaultSemiBold">w</ThemedText>{" "}
-          in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the{" "}
-          <ThemedText type="defaultSemiBold">@2x</ThemedText> and{" "}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to
-          provide files for different screen densities
-        </ThemedText>
-        <Image
-          source={require("@assets/images/react-logo.png")}
-          style={{ width: 100, height: 100, alignSelf: "center" }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{" "}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook
-          lets you inspect what the user&apos;s current color scheme is, and so
-          you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{" "}
-          <ThemedText type="defaultSemiBold">
-            components/HelloWave.tsx
-          </ThemedText>{" "}
-          component uses the powerful{" "}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{" "}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The{" "}
-              <ThemedText type="defaultSemiBold">
-                components/ParallaxScrollView.tsx
-              </ThemedText>{" "}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
-  );
+const PAGE_SIZE = 12;
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Something went wrong. Please try again.";
 }
 
-const styles = StyleSheet.create({
-  headerImage: {
-    color: "#808080",
-    bottom: -90,
-    left: -35,
-    position: "absolute",
-  },
-  titleContainer: {
-    flexDirection: "row",
-    gap: 8,
-  },
-});
+export default function InvoicesScreen() {
+  const palette = useColorPalette();
+  const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useConvexAuth();
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const createInvoice = useMutation(api.invoices.create);
+  const formOptions = useQuery(
+    api.invoices.invoiceFormOptions,
+    isAuthenticated ? {} : "skip",
+  );
+  const { results, status, isLoading, loadMore } = usePaginatedQuery(
+    api.invoices.listPaginated,
+    isAuthenticated ? {} : "skip",
+    { initialNumItems: PAGE_SIZE },
+  );
+
+  const clients = formOptions?.clients ?? [];
+  const projects = formOptions?.projects ?? [];
+
+  const clientOptions = useMemo(
+    () =>
+      clients.map((client) => ({
+        _id: String(client._id),
+        name: client.name,
+      })),
+    [clients],
+  );
+  const projectOptions = useMemo(
+    () =>
+      projects.map((project) => ({
+        _id: String(project._id),
+        name: project.name,
+        client: String(project.client),
+      })),
+    [projects],
+  );
+
+  const modalInitialValues = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return {
+      startDateInput: formatDateInput(monthStart.getTime()),
+      endDateInput: formatDateInput(now.getTime()),
+      clientId: clientOptions[0]?._id ?? "",
+      projectId: "",
+    };
+  }, [clientOptions]);
+
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    [],
+  );
+  const dateTimeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+    [],
+  );
+
+  async function handleCreateInvoice(values: InvoiceModalSubmitValues) {
+    const selectedClient = clients.find(
+      (client) => String(client._id) === values.clientId,
+    );
+    if (!selectedClient) {
+      throw new Error("Select a valid client.");
+    }
+
+    const selectedProject = values.projectId
+      ? projects.find((project) => String(project._id) === values.projectId)
+      : null;
+    if (values.projectId && !selectedProject) {
+      throw new Error("Select a valid project.");
+    }
+
+    setBusy(true);
+    setErrorMessage(null);
+
+    try {
+      await createInvoice({
+        clientId: selectedClient._id,
+        ...(selectedProject ? { projectId: selectedProject._id } : {}),
+        startAt: values.startAt,
+        endAt: values.endAt,
+      });
+      setModalVisible(false);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openModal() {
+    if (clients.length === 0) {
+      setErrorMessage("Create a client before creating invoice entries.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setModalVisible(true);
+  }
+
+  return (
+    <View className="flex-1" style={{ backgroundColor: palette.background }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: insets.top + 18,
+          paddingBottom: insets.bottom + 28,
+          paddingHorizontal: 16,
+          gap: 14,
+        }}
+      >
+        <Card
+          eyebrow="Billing"
+          title="Invoices"
+          description="Create invoice entries from date ranges now, and wire full totals later."
+          footer={
+            <View className="gap-2">
+              <Button
+                label="New invoice entry"
+                onPress={openModal}
+                loading={busy}
+              />
+              <View className="flex-row items-center gap-2">
+                <FontAwesome6
+                  name="file-invoice-dollar"
+                  size={12}
+                  color={palette.muted}
+                />
+                <Text
+                  className="text-xs"
+                  style={{ color: palette.muted, fontFamily: Fonts.sans }}
+                >
+                  {results.length} invoice {results.length === 1 ? "entry" : "entries"}
+                </Text>
+              </View>
+            </View>
+          }
+        >
+          <InlineNotice
+            tone="neutral"
+            message="Invoices are sorted by newest created first."
+          />
+          <InlineNotice message={errorMessage} />
+        </Card>
+
+        {isLoading && results.length === 0 ? (
+          <View
+            className="rounded-2xl border px-4 py-10"
+            style={{
+              borderColor: palette.border,
+              backgroundColor: palette.surfaceStrong,
+            }}
+          >
+            <ActivityIndicator color={palette.accent} />
+            <Text
+              className="mt-3 text-center text-sm"
+              style={{ color: palette.muted, fontFamily: Fonts.sans }}
+            >
+              Loading invoices...
+            </Text>
+          </View>
+        ) : null}
+
+        {!isLoading && results.length === 0 ? (
+          <View
+            className="rounded-2xl border px-4 py-8"
+            style={{
+              borderColor: palette.border,
+              backgroundColor: palette.surfaceStrong,
+            }}
+          >
+            <Text
+              className="text-base"
+              style={{
+                color: palette.text,
+                fontFamily: Fonts.sans,
+                fontWeight: "600",
+              }}
+            >
+              No invoice entries yet
+            </Text>
+            <Text className="mt-2 text-sm leading-6" style={{ color: palette.muted }}>
+              Create your first invoice entry using a date range and client scope.
+            </Text>
+          </View>
+        ) : null}
+
+        <View className="gap-3">
+          {results.map((invoice) => {
+            const rangeLabel = `${dateFormatter.format(new Date(invoice.startAt))} - ${dateFormatter.format(
+              new Date(invoice.endAt),
+            )}`;
+            const createdLabel = dateTimeFormatter.format(
+              new Date(invoice._creationTime),
+            );
+            const amountLabel =
+              invoice.amount > 0 ? `Amount ${invoice.amount}` : "Amount pending";
+            const projectLabel = invoice.projectName ?? "All client projects";
+
+            return (
+              <View
+                key={String(invoice._id)}
+                className="rounded-2xl border px-4 py-4 md:px-5"
+                style={{
+                  borderColor: palette.border,
+                  backgroundColor: palette.surfaceStrong,
+                }}
+              >
+                <View className="flex-row items-start justify-between gap-3">
+                  <View className="flex-1">
+                    <Text
+                      className="text-base"
+                      style={{
+                        color: palette.text,
+                        fontFamily: Fonts.sans,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {rangeLabel}
+                    </Text>
+                    <Text
+                      className="mt-1 text-sm"
+                      style={{ color: palette.muted, fontFamily: Fonts.sans }}
+                    >
+                      {invoice.clientName} • {projectLabel}
+                    </Text>
+                  </View>
+                  <View
+                    className="rounded-lg border px-2 py-1"
+                    style={{
+                      borderColor: palette.inputBorder,
+                      backgroundColor: palette.input,
+                    }}
+                  >
+                    <Text
+                      className="text-[11px]"
+                      style={{
+                        color: palette.muted,
+                        fontFamily: Fonts.mono,
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      {invoice.paidAt ? "Paid" : "Unpaid"}
+                    </Text>
+                  </View>
+                </View>
+                <View className="mt-3 flex-row items-center justify-between gap-3">
+                  <Text className="text-xs" style={{ color: palette.muted }}>
+                    Created {createdLabel}
+                  </Text>
+                  <Text
+                    className="text-xs"
+                    style={{
+                      color: palette.text,
+                      fontFamily: Fonts.sans,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {amountLabel}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {status !== "Exhausted" ? (
+          <Button
+            label={status === "LoadingMore" ? "Loading..." : "Load more invoices"}
+            variant="secondary"
+            loading={status === "LoadingMore"}
+            onPress={() => {
+              if (status === "CanLoadMore") {
+                loadMore(PAGE_SIZE);
+              }
+            }}
+          />
+        ) : null}
+      </ScrollView>
+
+      <InvoiceModal
+        visible={modalVisible}
+        busy={busy}
+        initialValues={modalInitialValues}
+        clients={clientOptions}
+        projects={projectOptions}
+        onClose={() => {
+          if (busy) {
+            return;
+          }
+          setModalVisible(false);
+        }}
+        onSubmit={handleCreateInvoice}
+      />
+    </View>
+  );
+}
