@@ -35,7 +35,6 @@ import {
   addDays,
   dayKey,
   formatDateLabel,
-  formatDateTimeInput,
   formatDuration,
   formatWeekRange,
   getWeekDays,
@@ -64,8 +63,8 @@ const EMPTY_MODAL_VALUES: TaskModalInitialValues = {
   description: "",
   clientId: "",
   projectId: "",
-  startAtInput: "",
-  endAtInput: "",
+  startAt: null,
+  endAt: null,
 };
 
 function getErrorMessage(error: unknown) {
@@ -229,8 +228,8 @@ export default function HomeScreen() {
         description: "",
         clientId: defaultProjectClientId,
         projectId: defaultProjectId,
-        startAtInput: formatDateTimeInput(safeStartAt),
-        endAtInput: safeEndAt ? formatDateTimeInput(safeEndAt) : "",
+        startAt: new Date(safeStartAt),
+        endAt: safeEndAt ? new Date(safeEndAt) : null,
       },
     });
   }
@@ -255,8 +254,8 @@ export default function HomeScreen() {
         description: task.description ?? "",
         clientId,
         projectId: String(task.project),
-        startAtInput: formatDateTimeInput(task.startAt),
-        endAtInput: task.endAt ? formatDateTimeInput(task.endAt) : "",
+        startAt: new Date(task.startAt),
+        endAt: task.endAt ? new Date(task.endAt) : null,
       },
     });
   }

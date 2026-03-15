@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { FontAwesome6 } from "@expo/vector-icons";
+import dayjs from "dayjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -13,11 +14,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { InlineNotice } from "@/components/ui/inline-notice";
-import { TextField } from "@/components/ui/text-field";
 import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
-import { DAY_MS, parseDateInput } from "@/lib/time";
+import { DAY_MS } from "@/lib/time";
 
 export type InvoiceClientOption = {
   _id: string;
@@ -31,8 +32,8 @@ export type InvoiceProjectOption = {
 };
 
 export type InvoiceModalInitialValues = {
-  startDateInput: string;
-  endDateInput: string;
+  startDate: Date | null;
+  endDate: Date | null;
   clientId: string;
   projectId: string;
 };
@@ -77,17 +78,18 @@ export function InvoiceModal({
         return;
       }
 
-      const startAt = parseDateInput(value.startDateInput);
-      if (!startAt) {
-        setErrorMessage("Start date must use YYYY-MM-DD.");
+      if (!value.startDate) {
+        setErrorMessage("Start date is required.");
         return;
       }
 
-      const endAtDayStart = parseDateInput(value.endDateInput);
-      if (!endAtDayStart) {
-        setErrorMessage("End date must use YYYY-MM-DD.");
+      if (!value.endDate) {
+        setErrorMessage("End date is required.");
         return;
       }
+
+      const startAt = dayjs(value.startDate).startOf("day").valueOf();
+      const endAtDayStart = dayjs(value.endDate).startOf("day").valueOf();
 
       if (endAtDayStart < startAt) {
         setErrorMessage("End date must be on or after the start date.");
@@ -247,7 +249,7 @@ export function InvoiceModal({
                     fontWeight: "600",
                   }}
                 >
-                  New Invoice Entry
+                  New Invoice
                 </Text>
                 <Pressable
                   className="h-8 w-8 items-center justify-center rounded-lg border"
@@ -274,30 +276,26 @@ export function InvoiceModal({
               >
                 <InlineNotice message={errorMessage} />
 
-                <form.Field name="startDateInput">
+                <form.Field name="startDate">
                   {(field) => (
-                    <TextField
-                      label="Start date (YYYY-MM-DD)"
+                    <DatePicker
+                      label="Start date"
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChangeText={field.handleChange}
-                      placeholder="2026-03-01"
-                      autoCapitalize="none"
-                      editable={!busy}
+                      onChange={field.handleChange}
+                      disabled={busy}
                     />
                   )}
                 </form.Field>
 
-                <form.Field name="endDateInput">
+                <form.Field name="endDate">
                   {(field) => (
-                    <TextField
-                      label="End date (YYYY-MM-DD)"
+                    <DatePicker
+                      label="End date"
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChangeText={field.handleChange}
-                      placeholder="2026-03-31"
-                      autoCapitalize="none"
-                      editable={!busy}
+                      onChange={field.handleChange}
+                      disabled={busy}
                     />
                   )}
                 </form.Field>
@@ -382,7 +380,7 @@ export function InvoiceModal({
                 <form.Subscribe selector={(state) => state.isSubmitting}>
                   {(isSubmitting) => (
                     <Button
-                      label="Create invoice entry"
+                      label="Create invoice"
                       loading={isSubmitting || busy}
                       onPress={() => void form.handleSubmit()}
                     />

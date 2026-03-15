@@ -8,11 +8,11 @@ import {
   Combobox,
   type ComboboxOption,
 } from "@/components/ui/combobox";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { InlineNotice } from "@/components/ui/inline-notice";
 import { TextField } from "@/components/ui/text-field";
 import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
-import { parseDateTimeInput } from "@/lib/time";
 
 export type ClientOption = {
   _id: string;
@@ -30,8 +30,8 @@ export type TaskModalInitialValues = {
   description: string;
   clientId: string;
   projectId: string;
-  startAtInput: string;
-  endAtInput: string;
+  startAt: Date | null;
+  endAt: Date | null;
 };
 
 export type TaskModalSubmitValues = {
@@ -93,18 +93,13 @@ export function TaskModal({
         return;
       }
 
-      const startAt = parseDateTimeInput(value.startAtInput);
-      if (!startAt) {
-        setErrorMessage("Start time must use YYYY-MM-DD HH:mm.");
+      if (!value.startAt) {
+        setErrorMessage("Start time is required.");
         return;
       }
+      const startAt = value.startAt.valueOf();
 
-      const trimmedEnd = value.endAtInput.trim();
-      const endAt = trimmedEnd ? parseDateTimeInput(trimmedEnd) : null;
-      if (trimmedEnd && !endAt) {
-        setErrorMessage("End time must use YYYY-MM-DD HH:mm.");
-        return;
-      }
+      const endAt = value.endAt?.valueOf() ?? null;
       if (endAt && endAt <= startAt) {
         setErrorMessage("End time must be after start time.");
         return;
@@ -115,7 +110,7 @@ export function TaskModal({
         description: value.description.trim() || undefined,
         projectId: value.projectId,
         startAt,
-        ...(endAt ? { endAt } : {}),
+        ...(endAt !== null ? { endAt } : {}),
       });
     },
   });
@@ -457,31 +452,61 @@ export function TaskModal({
               )}
             </form.Field>
 
-            <form.Field name="startAtInput">
+            <form.Field name="startAt">
               {(field) => (
-                <TextField
-                  label="Start time (YYYY-MM-DD HH:mm)"
+                <DateTimePicker
+                  label="Start time"
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChangeText={field.handleChange}
-                  placeholder="2026-03-15 09:30"
-                  autoCapitalize="none"
-                  editable={!locked && !busy}
+                  onChange={field.handleChange}
+                  disabled={locked || busy}
                 />
               )}
             </form.Field>
 
-            <form.Field name="endAtInput">
+            <form.Field name="endAt">
               {(field) => (
-                <TextField
-                  label="End time (optional, YYYY-MM-DD HH:mm)"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChangeText={field.handleChange}
-                  placeholder="Leave blank for active timer"
-                  autoCapitalize="none"
-                  editable={!locked && !busy}
-                />
+                <View className="gap-2">
+                  <DateTimePicker
+                    label="End time (optional)"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={field.handleChange}
+                    disabled={locked || busy}
+                  />
+                  {field.state.value ? (
+                    <View className="items-end">
+                      <Pressable
+                        className="rounded-lg px-2.5 py-1.5"
+                        onPress={() => {
+                          if (locked || busy) {
+                            return;
+                          }
+                          field.handleChange(null);
+                          field.handleBlur();
+                        }}
+                        style={({ pressed }) => ({
+                          backgroundColor: pressed ? palette.accentSoft : "transparent",
+                          opacity: locked || busy ? 0.5 : 1,
+                        })}
+                        accessibilityRole="button"
+                        accessibilityLabel="Clear end time"
+                        disabled={locked || busy}
+                      >
+                        <Text
+                          className="text-xs"
+                          style={{
+                            color: palette.accent,
+                            fontFamily: Fonts.sans,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Clear end time
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
               )}
             </form.Field>
 

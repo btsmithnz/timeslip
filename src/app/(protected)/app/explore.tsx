@@ -19,7 +19,6 @@ import { Card } from "@/components/ui/card";
 import { InlineNotice } from "@/components/ui/inline-notice";
 import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
-import { formatDateInput } from "@/lib/time";
 import { api } from "../../../../convex/_generated/api";
 
 const PAGE_SIZE = 12;
@@ -76,8 +75,8 @@ export default function InvoicesScreen() {
     const monthStart = now.startOf("month");
 
     return {
-      startDateInput: formatDateInput(monthStart.valueOf()),
-      endDateInput: formatDateInput(now.valueOf()),
+      startDate: monthStart.toDate(),
+      endDate: now.toDate(),
       clientId: clientOptions[0]?._id ?? "",
       projectId: "",
     };
@@ -118,7 +117,7 @@ export default function InvoicesScreen() {
 
   function openModal() {
     if (clients.length === 0) {
-      setErrorMessage("Create a client before creating invoice entries.");
+      setErrorMessage("Create a client before creating invoices.");
       return;
     }
 
@@ -139,11 +138,11 @@ export default function InvoicesScreen() {
         <Card
           eyebrow="Billing"
           title="Invoices"
-          description="Create invoice entries from date ranges now, and wire full totals later."
+          description="Create invoices from date ranges now, and wire full totals later."
           footer={
             <View className="gap-2">
               <Button
-                label="New invoice entry"
+                label="New invoice"
                 onPress={openModal}
                 loading={busy}
               />
@@ -157,7 +156,7 @@ export default function InvoicesScreen() {
                   className="text-xs"
                   style={{ color: palette.muted, fontFamily: Fonts.sans }}
                 >
-                  {results.length} invoice {results.length === 1 ? "entry" : "entries"}
+                  {results.length} {results.length === 1 ? "invoice" : "invoices"}
                 </Text>
               </View>
             </View>
@@ -204,10 +203,10 @@ export default function InvoicesScreen() {
                 fontWeight: "600",
               }}
             >
-              No invoice entries yet
+              No invoices yet
             </Text>
             <Text className="mt-2 text-sm leading-6" style={{ color: palette.muted }}>
-              Create your first invoice entry using a date range and client scope.
+              Create your first invoice using a date range and client scope.
             </Text>
           </View>
         ) : null}
