@@ -61,6 +61,8 @@ This document guides AI coding agents working in this repository.
 - Use Uniwind class names for new styling work where feasible.
 - Build reusable visual primitives in `src/components` (or `src/components/ui`).
 - Put generic buttons, cards, inputs, notices, and similar building blocks in `src/components/ui` with reusable, non-feature-specific names.
+- Default icon pattern: use Expo Vector Icons with Font Awesome 6 (`@expo/vector-icons`, `FontAwesome6`) for new iconography.
+- Prefer icon-only affordances (close, stop, etc.) to use `FontAwesome6` with clear accessibility labels.
 - Reserve `public`-scoped components/files for unauthenticated-shell concerns only; do not prefix generic UI primitives with `public` if they may be reused in the app.
 - Avoid one-off duplicated UI in route files; compose from shared components.
 - Ensure mobile and web compatibility for all UI changes.

@@ -5,24 +5,37 @@ import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 type ButtonVariant = "primary" | "secondary";
+type ButtonSize = "sm" | "md";
+
+const BUTTON_CONTAINER_CLASS: Record<ButtonSize, string> = {
+  sm: "h-8 items-center justify-center rounded-lg px-3",
+  md: "min-h-11 items-center justify-center rounded-xl px-4",
+};
+
+const BUTTON_LABEL_CLASS: Record<ButtonSize, string> = {
+  sm: "text-xs",
+  md: "text-sm",
+};
 
 export function Button({
   label,
   onPress,
   loading,
   variant = "primary",
+  size = "md",
 }: {
   label: string;
   onPress?: () => void;
   loading?: boolean;
   variant?: ButtonVariant;
+  size?: ButtonSize;
 }) {
   const palette = useColorPalette();
   const isPrimary = variant === "primary";
 
   return (
     <Pressable
-      className="min-h-11 items-center justify-center rounded-xl px-4"
+      className={BUTTON_CONTAINER_CLASS[size]}
       onPress={onPress}
       disabled={loading}
       style={({ pressed }) => ({
@@ -42,7 +55,7 @@ export function Button({
         <ActivityIndicator color={isPrimary ? palette.surfaceStrong : palette.text} />
       ) : (
         <Text
-          className="text-sm"
+          className={BUTTON_LABEL_CLASS[size]}
           style={{
             color: isPrimary ? palette.surfaceStrong : palette.text,
             fontFamily: Fonts.sans,
@@ -60,10 +73,12 @@ export function LinkButton({
   href,
   label,
   variant = "primary",
+  size = "md",
 }: {
   href: Href;
   label: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
 }) {
   const palette = useColorPalette();
   const isPrimary = variant === "primary";
@@ -71,7 +86,7 @@ export function LinkButton({
   return (
     <Link href={href} asChild>
       <Pressable
-        className="min-h-11 items-center justify-center rounded-xl px-4"
+        className={BUTTON_CONTAINER_CLASS[size]}
         style={({ pressed }) => ({
           backgroundColor: isPrimary
             ? pressed
@@ -85,7 +100,7 @@ export function LinkButton({
         })}
       >
         <Text
-          className="text-sm"
+          className={BUTTON_LABEL_CLASS[size]}
           style={{
             color: isPrimary ? palette.surfaceStrong : palette.text,
             fontFamily: Fonts.sans,
