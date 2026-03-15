@@ -30,7 +30,10 @@ export default function AppTabsLayout() {
           marginBottom: 0,
         },
         tabBarItemStyle: {
-          borderRadius: 0,
+          borderRadius: 999,
+          overflow: "hidden",
+          marginHorizontal: 3,
+          marginVertical: 4,
         },
         tabBarStyle: {
           position: "absolute",
@@ -41,8 +44,8 @@ export default function AppTabsLayout() {
           borderTopWidth: 0,
           borderRadius: 999,
           overflow: "hidden",
-          paddingHorizontal: 0,
-          paddingVertical: 0,
+          paddingHorizontal: 4,
+          paddingVertical: 2,
           backgroundColor: colorScheme === "dark" ? "#202325" : "#F3F4F6",
           shadowColor: "#000",
           shadowOpacity: 0.14,
