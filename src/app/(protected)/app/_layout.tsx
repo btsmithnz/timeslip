@@ -1,6 +1,7 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
+import { Platform, useWindowDimensions } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -9,13 +10,46 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function AppTabsLayout() {
   const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme ?? "light"];
+  const { width } = useWindowDimensions();
+  const tabBarWidth = 140;
+  const tabBarLeft = Math.max((width - tabBarWidth) / 2, 16);
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor:
+          colorScheme === "dark" ? Colors.light.text : palette.tabIconSelected,
+        tabBarInactiveTintColor: palette.tabIconDefault,
+        tabBarActiveBackgroundColor: "#FFFFFF",
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarShowLabel: false,
+        tabBarHideOnKeyboard: true,
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          borderRadius: 0,
+        },
+        tabBarStyle: {
+          position: "absolute",
+          bottom: Platform.select({ ios: 28, default: 20 }),
+          left: tabBarLeft,
+          width: tabBarWidth,
+          height: 52,
+          borderTopWidth: 0,
+          borderRadius: 999,
+          overflow: "hidden",
+          paddingHorizontal: 0,
+          paddingVertical: 0,
+          backgroundColor: colorScheme === "dark" ? "#202325" : "#F3F4F6",
+          shadowColor: "#000",
+          shadowOpacity: 0.14,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 8,
+        },
       }}
     >
       <Tabs.Screen
@@ -23,7 +57,7 @@ export default function AppTabsLayout() {
         options={{
           title: "Timers",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="clock.fill" color={color} />
+            <IconSymbol size={24} name="clock.fill" color={color} />
           ),
         }}
       />
@@ -32,7 +66,7 @@ export default function AppTabsLayout() {
         options={{
           title: "Invoices",
           tabBarIcon: ({ color }) => (
-            <FontAwesome6 name="file-invoice-dollar" size={20} color={color} />
+            <FontAwesome6 name="file-invoice-dollar" size={18} color={color} />
           ),
         }}
       />
