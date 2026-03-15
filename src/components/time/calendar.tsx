@@ -35,6 +35,24 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+type SlotPressNativeEvent = {
+  locationY?: number;
+  offsetY?: number;
+  layerY?: number;
+};
+
+function getSlotPressY(nativeEvent: SlotPressNativeEvent) {
+  const candidates = [nativeEvent.locationY, nativeEvent.offsetY, nativeEvent.layerY];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+  }
+
+  return 0;
+}
+
 function getDayLabel(date: Date) {
   return new Intl.DateTimeFormat(undefined, { weekday: "short" })
     .format(date)
@@ -195,7 +213,7 @@ export function CalendarDayColumn({
           backgroundColor: palette.surfaceStrong,
         }}
         onPress={(event) => {
-          const y = clamp(event.nativeEvent.locationY, 0, DAY_HEIGHT);
+          const y = clamp(getSlotPressY(event.nativeEvent), 0, DAY_HEIGHT);
           const totalMinutes = (y / HOUR_ROW_HEIGHT) * 60;
           const roundedMinutes = clamp(Math.round(totalMinutes / 15) * 15, 0, 23 * 60 + 45);
           onPressSlot(dayStart + roundedMinutes * MINUTE_MS);

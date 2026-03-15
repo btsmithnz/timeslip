@@ -2,6 +2,7 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -207,6 +208,16 @@ export default function HomeScreen() {
     : defaultClientId;
 
   function openCreateModal(startAt: number, endAt?: number) {
+    const safeStartAt = Number.isFinite(startAt)
+      ? startAt
+      : roundToQuarterHour(Date.now());
+    const safeEndAt =
+      typeof endAt === "number" && Number.isFinite(endAt) && endAt > safeStartAt
+        ? endAt
+        : typeof endAt === "number"
+          ? safeStartAt + 60 * 60 * 1000
+          : undefined;
+
     setErrorMessage(null);
     setModalState({
       visible: true,
@@ -217,8 +228,8 @@ export default function HomeScreen() {
         description: "",
         clientId: defaultProjectClientId,
         projectId: defaultProjectId,
-        startAtInput: formatDateTimeInput(startAt),
-        endAtInput: endAt ? formatDateTimeInput(endAt) : "",
+        startAtInput: formatDateTimeInput(safeStartAt),
+        endAtInput: safeEndAt ? formatDateTimeInput(safeEndAt) : "",
       },
     });
   }
@@ -507,6 +518,7 @@ export default function HomeScreen() {
     })
     .sort((a, b) => a.startAt - b.startAt);
 
+  const isTimersLoading = data === undefined;
   const calendarTitle =
     viewMode === "week"
       ? formatWeekRange(weekDays)
@@ -644,17 +656,27 @@ export default function HomeScreen() {
               >
                 Calendar
               </Text>
-              <Text
-                numberOfLines={1}
-                className="mt-1 text-base"
-                style={{
-                  color: palette.text,
-                  fontFamily: Fonts.sans,
-                  fontWeight: "600",
-                }}
-              >
-                {calendarTitle}
-              </Text>
+              <View className="mt-1 max-w-full flex-row items-center self-start gap-2">
+                <Text
+                  numberOfLines={1}
+                  className="text-base"
+                  style={{
+                    color: palette.text,
+                    fontFamily: Fonts.sans,
+                    fontWeight: "600",
+                    flexShrink: 1,
+                  }}
+                >
+                  {calendarTitle}
+                </Text>
+                {isTimersLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={palette.muted}
+                    accessibilityLabel="Loading timers"
+                  />
+                ) : null}
+              </View>
             </View>
 
             <View className="flex-row flex-wrap items-center justify-end gap-2">
@@ -739,19 +761,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {data === undefined ? (
-            <View
-              className="rounded-2xl border px-4 py-4"
-              style={{
-                borderColor: palette.border,
-                backgroundColor: palette.surfaceStrong,
-              }}
-            >
-              <Text style={{ color: palette.muted }}>
-                Loading your timers...
-              </Text>
-            </View>
-          ) : viewMode === "week" ? (
+          {viewMode === "week" ? (
             <WeekCalendar
               days={weekDays}
               fluid={isDesktop}
