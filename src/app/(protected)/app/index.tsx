@@ -793,26 +793,6 @@ export default function HomeScreen() {
             />
           )}
 
-          {viewMode === "day" ? (
-            <View className="flex-row justify-between px-1">
-              <Button
-                label="Previous day"
-                variant="secondary"
-                size="sm"
-                onPress={() =>
-                  setSelectedDate((current) => addDays(current, -1))
-                }
-              />
-              <Button
-                label="Next day"
-                variant="secondary"
-                size="sm"
-                onPress={() =>
-                  setSelectedDate((current) => addDays(current, 1))
-                }
-              />
-            </View>
-          ) : null}
         </View>
 
         <TaskModal

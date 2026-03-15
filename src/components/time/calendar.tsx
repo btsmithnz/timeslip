@@ -9,6 +9,8 @@ export const HOUR_ROW_HEIGHT = 52;
 const HEADER_HEIGHT = 52;
 const TIME_GUTTER_WIDTH = 72;
 const DAY_HEIGHT = HOUR_ROW_HEIGHT * 24;
+const TITLE_ONLY_MAX_HEIGHT = 30;
+const TITLE_AND_TIME_MAX_HEIGHT = 44;
 
 export type CalendarTaskSegment = {
   id: string;
@@ -30,6 +32,11 @@ type DayColumnProps = {
   onPressTask: (taskId: string) => void;
   onLongPressTask: (taskId: string) => void;
   onRightClickTask: (taskId: string) => void;
+};
+
+type PositionedCalendarTaskSegment = CalendarTaskSegment & {
+  laneIndex: number;
+  laneCount: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -66,6 +73,91 @@ function getHourLabel(hour: number) {
   return dayjs().startOf("day").add(hour, "hour").format("h:mm A");
 }
 
+function sortCalendarSegments(a: CalendarTaskSegment, b: CalendarTaskSegment) {
+  if (a.startAt !== b.startAt) {
+    return a.startAt - b.startAt;
+  }
+
+  const aDuration = a.endAt - a.startAt;
+  const bDuration = b.endAt - b.startAt;
+  if (aDuration !== bDuration) {
+    return bDuration - aDuration;
+  }
+
+  return a.id.localeCompare(b.id);
+}
+
+function layoutOverlappingSegments(
+  segments: CalendarTaskSegment[],
+): PositionedCalendarTaskSegment[] {
+  const sortedSegments = [...segments].sort(sortCalendarSegments);
+  const positionedSegments: PositionedCalendarTaskSegment[] = [];
+
+  let group: CalendarTaskSegment[] = [];
+  let groupMaxEndAt = -Infinity;
+
+  const flushGroup = () => {
+    if (group.length === 0) {
+      return;
+    }
+
+    const activeLanes: { laneIndex: number; endAt: number }[] = [];
+    const assignedLanes: { segment: CalendarTaskSegment; laneIndex: number }[] = [];
+    let laneCount = 0;
+
+    group.forEach((segment) => {
+      for (let i = activeLanes.length - 1; i >= 0; i -= 1) {
+        if (activeLanes[i].endAt <= segment.startAt) {
+          activeLanes.splice(i, 1);
+        }
+      }
+
+      const occupiedLanes = new Set(activeLanes.map((lane) => lane.laneIndex));
+      let laneIndex = 0;
+      while (occupiedLanes.has(laneIndex)) {
+        laneIndex += 1;
+      }
+
+      activeLanes.push({ laneIndex, endAt: segment.endAt });
+      assignedLanes.push({ segment, laneIndex });
+      laneCount = Math.max(laneCount, laneIndex + 1);
+    });
+
+    assignedLanes.forEach(({ segment, laneIndex }) => {
+      positionedSegments.push({
+        ...segment,
+        laneIndex,
+        laneCount,
+      });
+    });
+
+    group = [];
+    groupMaxEndAt = -Infinity;
+  };
+
+  sortedSegments.forEach((segment) => {
+    if (group.length === 0) {
+      group.push(segment);
+      groupMaxEndAt = segment.endAt;
+      return;
+    }
+
+    if (segment.startAt < groupMaxEndAt) {
+      group.push(segment);
+      groupMaxEndAt = Math.max(groupMaxEndAt, segment.endAt);
+      return;
+    }
+
+    flushGroup();
+    group.push(segment);
+    groupMaxEndAt = segment.endAt;
+  });
+
+  flushGroup();
+
+  return positionedSegments;
+}
+
 function TaskBlock({
   segment,
   palette,
@@ -74,14 +166,18 @@ function TaskBlock({
   onRightClick,
   top,
   height,
+  leftPercent,
+  widthPercent,
 }: {
-  segment: CalendarTaskSegment;
+  segment: PositionedCalendarTaskSegment;
   palette: ColorPalette;
   onPress: () => void;
   onLongPress: () => void;
   onRightClick: () => void;
   top: number;
   height: number;
+  leftPercent: number;
+  widthPercent: number;
 }) {
   const webOnlyProps =
     Platform.OS === "web"
@@ -93,16 +189,24 @@ function TaskBlock({
         } as const)
       : ({} as const);
 
+  const showTitleOnly = height <= TITLE_ONLY_MAX_HEIGHT;
+  const showFullDetails = height > TITLE_AND_TIME_MAX_HEIGHT;
+  const showTimeLine = !showTitleOnly;
+
   return (
     <Pressable
       {...(webOnlyProps as object)}
       onPress={onPress}
       onLongPress={onLongPress}
-      className="absolute left-1 right-1 rounded-md border px-2 py-1"
+      className="absolute rounded-md border px-2"
       style={{
         top,
         minHeight: 20,
         height,
+        left: `${leftPercent}%`,
+        width: `${widthPercent}%`,
+        paddingTop: showTitleOnly ? 1 : 4,
+        paddingBottom: showTitleOnly ? 1 : 4,
         backgroundColor: segment.invoiced
           ? palette.borderSoft
           : segment.isActive
@@ -119,28 +223,35 @@ function TaskBlock({
           color: segment.isActive ? palette.surfaceStrong : palette.text,
           fontFamily: Fonts.sans,
           fontWeight: "600",
+          lineHeight: 13,
         }}
       >
         {segment.title}
       </Text>
-      <Text
-        numberOfLines={1}
-        className="text-[10px]"
-        style={{
-          color: segment.isActive ? palette.surfaceStrong : palette.muted,
-        }}
-      >
-        {segment.projectName}
-      </Text>
-      <Text
-        numberOfLines={1}
-        className="text-[10px]"
-        style={{
-          color: segment.isActive ? palette.surfaceStrong : palette.muted,
-        }}
-      >
-        {`${formatTime(segment.startAt)} - ${formatTime(segment.endAt)}`}
-      </Text>
+      {showFullDetails ? (
+        <Text
+          numberOfLines={1}
+          className="text-[10px]"
+          style={{
+            color: segment.isActive ? palette.surfaceStrong : palette.muted,
+            lineHeight: 11,
+          }}
+        >
+          {segment.projectName}
+        </Text>
+      ) : null}
+      {showTimeLine ? (
+        <Text
+          numberOfLines={1}
+          className="text-[10px]"
+          style={{
+            color: segment.isActive ? palette.surfaceStrong : palette.muted,
+            lineHeight: 11,
+          }}
+        >
+          {`${formatTime(segment.startAt)} - ${formatTime(segment.endAt)}`}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -165,8 +276,9 @@ export function CalendarDayColumn({
       ...segment,
       startAt: clamp(segment.startAt, dayStart, dayEnd - 15 * MINUTE_MS),
       endAt: clamp(segment.endAt, dayStart + 15 * MINUTE_MS, dayEnd),
-    }))
-    .sort((a, b) => a.startAt - b.startAt);
+    }));
+
+  const positionedSegments = layoutOverlappingSegments(clampedSegments);
 
   return (
     <View className="flex-1">
@@ -224,11 +336,13 @@ export function CalendarDayColumn({
             }}
           />
         ))}
-        {clampedSegments.map((segment) => {
+        {positionedSegments.map((segment) => {
           const offsetMinutes = (segment.startAt - dayStart) / MINUTE_MS;
           const durationMs = Math.max(15 * MINUTE_MS, segment.endAt - segment.startAt);
           const top = (offsetMinutes / 60) * HOUR_ROW_HEIGHT;
           const height = Math.max(20, (durationMs / HOUR_MS) * HOUR_ROW_HEIGHT - 2);
+          const widthPercent = 100 / segment.laneCount;
+          const leftPercent = segment.laneIndex * widthPercent;
 
           return (
             <TaskBlock
@@ -240,6 +354,8 @@ export function CalendarDayColumn({
               onRightClick={() => onRightClickTask(segment.id)}
               top={top}
               height={height}
+              leftPercent={leftPercent}
+              widthPercent={widthPercent}
             />
           );
         })}
