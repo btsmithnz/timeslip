@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Easing, Modal, Pressable, ScrollView, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/combobox";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { InlineNotice } from "@/components/ui/inline-notice";
+import { Text } from "@/components/ui/text";
 import { TextField } from "@/components/ui/text-field";
-import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 export type ClientOption = {
@@ -251,14 +251,7 @@ export function TaskModal({
             className="flex-row items-center justify-between border-b px-4 py-3"
             style={{ borderColor: palette.border }}
           >
-            <Text
-              className="text-lg"
-              style={{
-                color: palette.text,
-                fontFamily: Fonts.sans,
-                fontWeight: "600",
-              }}
-            >
+            <Text className="text-lg" weight="600">
               {mode === "create" ? "New Task" : locked ? "Task (Invoiced)" : "Edit Task"}
             </Text>
             <Pressable
@@ -493,14 +486,7 @@ export function TaskModal({
                         accessibilityLabel="Clear end time"
                         disabled={locked || busy}
                       >
-                        <Text
-                          className="text-xs"
-                          style={{
-                            color: palette.accent,
-                            fontFamily: Fonts.sans,
-                            fontWeight: "600",
-                          }}
-                        >
+                        <Text className="text-xs" color="accent" weight="600">
                           Clear end time
                         </Text>
                       </Pressable>

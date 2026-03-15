@@ -1,16 +1,15 @@
 import { useForm } from "@tanstack/react-form";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { PublicLayout } from "@/components/public/layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { InlineNotice } from "@/components/ui/inline-notice";
 import { LinkRow } from "@/components/ui/link-row";
+import { Text } from "@/components/ui/text";
 import { TextField } from "@/components/ui/text-field";
-import { Fonts } from "@/constants/theme";
-import { useColorPalette } from "@/hooks/use-color-palette";
 import { authClient } from "@/lib/auth-client";
 
 function getAuthErrorMessage(error: unknown) {
@@ -26,7 +25,6 @@ function getAuthErrorMessage(error: unknown) {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const palette = useColorPalette();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm({
     defaultValues: {
@@ -109,14 +107,7 @@ export default function LoginScreen() {
             )}
           </form.Subscribe>
           <Link href="/sign-up">
-            <Text
-              className="text-center text-sm"
-              style={{
-                color: palette.accent,
-                fontFamily: Fonts.sans,
-                fontWeight: "500",
-              }}
-            >
+            <Text className="text-center text-sm" color="accent" weight="500">
               Create a new Timeslip account
             </Text>
           </Link>

@@ -7,7 +7,7 @@ import {
 } from "convex/react";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { InlineNotice } from "@/components/ui/inline-notice";
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 import { api } from "../../../../convex/_generated/api";
 
@@ -152,10 +152,7 @@ export default function InvoicesScreen() {
                   size={12}
                   color={palette.muted}
                 />
-                <Text
-                  className="text-xs"
-                  style={{ color: palette.muted, fontFamily: Fonts.sans }}
-                >
+                <Text className="text-xs" color="muted">
                   {results.length} {results.length === 1 ? "invoice" : "invoices"}
                 </Text>
               </View>
@@ -178,10 +175,7 @@ export default function InvoicesScreen() {
             }}
           >
             <ActivityIndicator color={palette.accent} />
-            <Text
-              className="mt-3 text-center text-sm"
-              style={{ color: palette.muted, fontFamily: Fonts.sans }}
-            >
+            <Text className="mt-3 text-center text-sm" color="muted">
               Loading invoices...
             </Text>
           </View>
@@ -195,17 +189,10 @@ export default function InvoicesScreen() {
               backgroundColor: palette.surfaceStrong,
             }}
           >
-            <Text
-              className="text-base"
-              style={{
-                color: palette.text,
-                fontFamily: Fonts.sans,
-                fontWeight: "600",
-              }}
-            >
+            <Text className="text-base" weight="600">
               No invoices yet
             </Text>
-            <Text className="mt-2 text-sm leading-6" style={{ color: palette.muted }}>
+            <Text className="mt-2 text-sm leading-6" color="muted">
               Create your first invoice using a date range and client scope.
             </Text>
           </View>
@@ -234,20 +221,10 @@ export default function InvoicesScreen() {
               >
                 <View className="flex-row items-start justify-between gap-3">
                   <View className="flex-1">
-                    <Text
-                      className="text-base"
-                      style={{
-                        color: palette.text,
-                        fontFamily: Fonts.sans,
-                        fontWeight: "600",
-                      }}
-                    >
+                    <Text className="text-base" weight="600">
                       {rangeLabel}
                     </Text>
-                    <Text
-                      className="mt-1 text-sm"
-                      style={{ color: palette.muted, fontFamily: Fonts.sans }}
-                    >
+                    <Text className="mt-1 text-sm" color="muted">
                       {invoice.clientName} • {projectLabel}
                     </Text>
                   </View>
@@ -260,28 +237,18 @@ export default function InvoicesScreen() {
                   >
                     <Text
                       className="text-[11px]"
-                      style={{
-                        color: palette.muted,
-                        fontFamily: Fonts.mono,
-                        letterSpacing: 0.5,
-                      }}
+                      color="muted"
+                      style={{ letterSpacing: 0.5 }}
                     >
                       {invoice.paidAt ? "Paid" : "Unpaid"}
                     </Text>
                   </View>
                 </View>
                 <View className="mt-3 flex-row items-center justify-between gap-3">
-                  <Text className="text-xs" style={{ color: palette.muted }}>
+                  <Text className="text-xs" color="muted">
                     Created {createdLabel}
                   </Text>
-                  <Text
-                    className="text-xs"
-                    style={{
-                      color: palette.text,
-                      fontFamily: Fonts.sans,
-                      fontWeight: "500",
-                    }}
-                  >
+                  <Text className="text-xs" weight="500">
                     {amountLabel}
                   </Text>
                 </View>

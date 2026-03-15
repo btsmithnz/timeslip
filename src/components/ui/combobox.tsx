@@ -1,8 +1,9 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 export type ComboboxOption = {
@@ -12,6 +13,7 @@ export type ComboboxOption = {
 
 export function Combobox({
   label,
+  hideLabel = false,
   value,
   options,
   placeholder,
@@ -24,6 +26,7 @@ export function Combobox({
   onCreate,
 }: {
   label: string;
+  hideLabel?: boolean;
   value: string;
   options: ComboboxOption[];
   placeholder: string;
@@ -92,16 +95,16 @@ export function Combobox({
         zIndex: isOpen ? 800 : 1,
       }}
     >
-      <Text
-        className="text-[11px] uppercase"
-        style={{
-          color: palette.muted,
-          fontFamily: Fonts.mono,
-          letterSpacing: 1.2,
-        }}
-      >
-        {label}
-      </Text>
+      {hideLabel ? null : (
+        <Text
+          className="text-[11px]"
+          color="muted"
+          uppercase
+          style={{ letterSpacing: 1.2 }}
+        >
+          {label}
+        </Text>
+      )}
 
       <View
         className="min-h-11 flex-row items-center rounded-xl border px-3.5 py-3"
@@ -221,11 +224,7 @@ export function Combobox({
                   >
                     <Text
                       className="text-sm"
-                      style={{
-                        color: palette.text,
-                        fontFamily: Fonts.sans,
-                        fontWeight: isSelected ? "600" : "500",
-                      }}
+                      weight={isSelected ? "600" : "500"}
                     >
                       {option.label}
                     </Text>
@@ -237,10 +236,7 @@ export function Combobox({
               })}
 
               {showEmptyState ? (
-                <Text
-                  className="px-3 py-3 text-sm"
-                  style={{ color: palette.muted, fontFamily: Fonts.sans }}
-                >
+                <Text className="px-3 py-3 text-sm" color="muted">
                   {emptyLabel}
                 </Text>
               ) : null}
@@ -273,14 +269,7 @@ export function Combobox({
                     });
                   }}
                 >
-                  <Text
-                    className="text-sm"
-                    style={{
-                      color: palette.accent,
-                      fontFamily: Fonts.sans,
-                      fontWeight: "600",
-                    }}
-                    >
+                  <Text className="text-sm" color="accent" weight="600">
                     {creating ? "Creating..." : `+ Create "${inputValue.trim()}"`}
                   </Text>
                 </Pressable>
@@ -290,7 +279,7 @@ export function Combobox({
         ) : null}
 
       {helperText ? (
-        <Text className="text-xs" style={{ color: palette.muted }}>
+        <Text className="text-xs" color="muted">
           {helperText}
         </Text>
       ) : null}

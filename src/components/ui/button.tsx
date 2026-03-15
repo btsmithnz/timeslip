@@ -1,7 +1,7 @@
 import { Link, type Href } from "expo-router";
-import { ActivityIndicator, Pressable, Text } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 type ButtonVariant = "primary" | "secondary";
@@ -56,11 +56,8 @@ export function Button({
       ) : (
         <Text
           className={BUTTON_LABEL_CLASS[size]}
-          style={{
-            color: isPrimary ? palette.surfaceStrong : palette.text,
-            fontFamily: Fonts.sans,
-            fontWeight: isPrimary ? "600" : "500",
-          }}
+          color={isPrimary ? "inverted" : "default"}
+          weight={isPrimary ? "600" : "500"}
         >
           {label}
         </Text>
@@ -101,11 +98,8 @@ export function LinkButton({
       >
         <Text
           className={BUTTON_LABEL_CLASS[size]}
-          style={{
-            color: isPrimary ? palette.surfaceStrong : palette.text,
-            fontFamily: Fonts.sans,
-            fontWeight: isPrimary ? "600" : "500",
-          }}
+          color={isPrimary ? "inverted" : "default"}
+          weight={isPrimary ? "600" : "500"}
         >
           {label}
         </Text>

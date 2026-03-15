@@ -1,6 +1,6 @@
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 export function PublicStatusScreen({
@@ -27,10 +27,10 @@ export function PublicStatusScreen({
         }}
       >
         <ActivityIndicator color={palette.accent} />
-        <Text className="mt-4 text-center text-2xl" style={{ color: palette.text, fontFamily: Fonts.sans }}>
+        <Text className="mt-4 text-center text-2xl">
           {title}
         </Text>
-        <Text className="mt-2 text-center text-sm leading-6" style={{ color: palette.muted }}>
+        <Text className="mt-2 text-center text-sm leading-6" color="muted">
           {message}
         </Text>
       </View>

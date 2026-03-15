@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export function Card({
   title,
@@ -18,6 +19,8 @@ export function Card({
   footer?: ReactNode;
 }) {
   const palette = useColorPalette();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View
@@ -25,29 +28,26 @@ export function Card({
       style={{
         backgroundColor: palette.surfaceStrong,
         borderColor: palette.border,
-        shadowColor: palette.shadow,
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 8 },
+        shadowColor: isDark ? "rgba(0, 0, 0, 0.6)" : palette.shadow,
+        shadowOpacity: isDark ? 1 : 0.35,
+        shadowRadius: isDark ? 20 : 12,
+        shadowOffset: { width: 0, height: isDark ? 12 : 8 },
         elevation: 4,
       }}
     >
       {eyebrow ? (
-        <Text
-          className="text-[11px] uppercase"
-          style={{ color: palette.muted, fontFamily: Fonts.mono, letterSpacing: 1.6 }}
-        >
+        <Text className="text-[11px]" color="muted" uppercase>
           {eyebrow}
         </Text>
       ) : null}
       <Text
         className={eyebrow ? "mt-3 text-2xl" : "text-2xl"}
-        style={{ color: palette.text, fontFamily: Fonts.sans, fontWeight: "600" }}
+        weight="600"
       >
         {title}
       </Text>
       {description ? (
-        <Text className="mt-2 text-sm leading-6" style={{ color: palette.muted }}>
+        <Text className="mt-2 text-sm leading-6" color="muted">
           {description}
         </Text>
       ) : null}

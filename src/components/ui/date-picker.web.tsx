@@ -1,7 +1,8 @@
 import { type ChangeEvent, type CSSProperties } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 export type DatePickerProps = {
@@ -80,10 +81,7 @@ export function DatePicker({
 
   return (
     <View className="gap-2">
-      <Text
-        className="text-[11px] uppercase"
-        style={{ color: palette.muted, fontFamily: Fonts.mono, letterSpacing: 1.6 }}
-      >
+      <Text className="text-[11px]" color="muted" uppercase>
         {label}
       </Text>
 
@@ -107,7 +105,7 @@ export function DatePicker({
       </View>
 
       {helperText ? (
-        <Text className="text-xs" style={{ color: palette.muted, fontFamily: Fonts.sans }}>
+        <Text className="text-xs" color="muted">
           {helperText}
         </Text>
       ) : null}

@@ -4,9 +4,9 @@ import NativeDateTimePicker, {
 import { FontAwesome6 } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 export type DatePickerProps = {
@@ -71,10 +71,7 @@ export function DatePicker({
 
   return (
     <View className="gap-2">
-      <Text
-        className="text-[11px] uppercase"
-        style={{ color: palette.muted, fontFamily: Fonts.mono, letterSpacing: 1.6 }}
-      >
+      <Text className="text-[11px]" color="muted" uppercase>
         {label}
       </Text>
       <Pressable
@@ -96,7 +93,7 @@ export function DatePicker({
       >
         <Text
           className="flex-1 text-sm"
-          style={{ color: value ? palette.text : palette.muted, fontFamily: Fonts.sans }}
+          color={value ? "default" : "muted"}
         >
           {value ? formatter.format(value) : placeholder}
         </Text>
@@ -104,7 +101,7 @@ export function DatePicker({
       </Pressable>
 
       {helperText ? (
-        <Text className="text-xs" style={{ color: palette.muted, fontFamily: Fonts.sans }}>
+        <Text className="text-xs" color="muted">
           {helperText}
         </Text>
       ) : null}
@@ -132,10 +129,7 @@ export function DatePicker({
               accessibilityRole="button"
               accessibilityLabel={`Done selecting ${label}`}
             >
-              <Text
-                className="text-sm"
-                style={{ color: palette.accent, fontFamily: Fonts.sans, fontWeight: "600" }}
-              >
+              <Text className="text-sm" color="accent" weight="600">
                 Done
               </Text>
             </Pressable>

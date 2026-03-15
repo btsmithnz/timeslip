@@ -8,7 +8,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from "react-native";
 
@@ -16,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { InlineNotice } from "@/components/ui/inline-notice";
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 import { DAY_MS } from "@/lib/time";
 
@@ -241,14 +240,7 @@ export function InvoiceModal({
                 className="flex-row items-center justify-between border-b px-4 py-3"
                 style={{ borderColor: palette.border }}
               >
-                <Text
-                  className="text-lg"
-                  style={{
-                    color: palette.text,
-                    fontFamily: Fonts.sans,
-                    fontWeight: "600",
-                  }}
-                >
+                <Text className="text-lg" weight="600">
                   New Invoice
                 </Text>
                 <Pressable

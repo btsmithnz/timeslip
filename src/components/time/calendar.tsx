@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import type { ColorPalette } from "@/hooks/use-color-palette";
 import { HOUR_MS, MINUTE_MS, dayKey, formatTime, startOfDay } from "@/lib/time";
 
@@ -11,6 +12,9 @@ const TIME_GUTTER_WIDTH = 72;
 const DAY_HEIGHT = HOUR_ROW_HEIGHT * 24;
 const TITLE_ONLY_MAX_HEIGHT = 30;
 const TITLE_AND_TIME_MAX_HEIGHT = 44;
+const CURRENT_TIME_COLOR = "#f05545";
+const WORK_HOURS_START = 7;
+const WORK_HOURS_END = 19;
 
 export type CalendarTaskSegment = {
   id: string;
@@ -27,12 +31,50 @@ type DayColumnProps = {
   palette: ColorPalette;
   segments: CalendarTaskSegment[];
   isSelected?: boolean;
+  nowMs?: number;
   onSelectDay?: (date: Date) => void;
   onPressSlot: (startAt: number) => void;
   onPressTask: (taskId: string) => void;
   onLongPressTask: (taskId: string) => void;
   onRightClickTask: (taskId: string) => void;
 };
+
+function CurrentTimeLine({ nowMs, dayStart }: { nowMs: number; dayStart: number }) {
+  const minutesSinceMidnight = (nowMs - dayStart) / MINUTE_MS;
+  const top = (minutesSinceMidnight / 60) * HOUR_ROW_HEIGHT;
+
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top,
+        zIndex: 50,
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: CURRENT_TIME_COLOR,
+          marginLeft: -3,
+        }}
+      />
+      <View
+        style={{
+          flex: 1,
+          height: 2,
+          backgroundColor: CURRENT_TIME_COLOR,
+        }}
+      />
+    </View>
+  );
+}
 
 type PositionedCalendarTaskSegment = CalendarTaskSegment & {
   laneIndex: number;
@@ -219,12 +261,9 @@ function TaskBlock({
       <Text
         numberOfLines={1}
         className="text-[11px]"
-        style={{
-          color: segment.isActive ? palette.surfaceStrong : palette.text,
-          fontFamily: Fonts.sans,
-          fontWeight: "600",
-          lineHeight: 13,
-        }}
+        color={segment.isActive ? "inverted" : "default"}
+        weight="600"
+        style={{ lineHeight: 13 }}
       >
         {segment.title}
       </Text>
@@ -232,10 +271,8 @@ function TaskBlock({
         <Text
           numberOfLines={1}
           className="text-[10px]"
-          style={{
-            color: segment.isActive ? palette.surfaceStrong : palette.muted,
-            lineHeight: 11,
-          }}
+          color={segment.isActive ? "inverted" : "muted"}
+          style={{ lineHeight: 11 }}
         >
           {segment.projectName}
         </Text>
@@ -244,10 +281,8 @@ function TaskBlock({
         <Text
           numberOfLines={1}
           className="text-[10px]"
-          style={{
-            color: segment.isActive ? palette.surfaceStrong : palette.muted,
-            lineHeight: 11,
-          }}
+          color={segment.isActive ? "inverted" : "muted"}
+          style={{ lineHeight: 11 }}
         >
           {`${formatTime(segment.startAt)} - ${formatTime(segment.endAt)}`}
         </Text>
@@ -256,11 +291,71 @@ function TaskBlock({
   );
 }
 
+function HoverIndicator({
+  top,
+  palette,
+  label,
+}: {
+  top: number;
+  palette: ColorPalette;
+  label: string;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top,
+        zIndex: 40,
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={{
+          flex: 1,
+          height: 1,
+          backgroundColor: palette.accent,
+          opacity: 0.5,
+        }}
+      />
+      <View
+        style={{
+          backgroundColor: palette.accent,
+          borderRadius: 4,
+          paddingHorizontal: 4,
+          paddingVertical: 1,
+          marginRight: 2,
+          opacity: 0.7,
+        }}
+      >
+        <Text
+          style={{ fontSize: 9, lineHeight: 12 }}
+          color="inverted"
+          weight="600"
+        >
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function snapToQuarterHour(y: number): { top: number; minutes: number } {
+  const totalMinutes = (y / HOUR_ROW_HEIGHT) * 60;
+  const roundedMinutes = clamp(Math.round(totalMinutes / 15) * 15, 0, 23 * 60 + 45);
+  const top = (roundedMinutes / 60) * HOUR_ROW_HEIGHT;
+  return { top, minutes: roundedMinutes };
+}
+
 export function CalendarDayColumn({
   date,
   palette,
   segments,
   isSelected = false,
+  nowMs,
   onSelectDay,
   onPressSlot,
   onPressTask,
@@ -269,6 +364,22 @@ export function CalendarDayColumn({
 }: DayColumnProps) {
   const dayStart = startOfDay(date).getTime();
   const dayEnd = dayStart + 24 * HOUR_MS;
+
+  const todayStart = startOfDay(new Date()).getTime();
+  const isToday = dayStart === todayStart;
+  const showTimeLine = isToday && typeof nowMs === "number" && nowMs >= dayStart && nowMs < dayEnd;
+
+  const [hoverSlot, setHoverSlot] = useState<{ top: number; minutes: number } | null>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const y = clamp(e.clientY - rect.top, 0, DAY_HEIGHT);
+    setHoverSlot(snapToQuarterHour(y));
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoverSlot(null);
+  }, []);
 
   const clampedSegments = segments
     .filter((segment) => segment.endAt > dayStart && segment.startAt < dayEnd)
@@ -280,6 +391,14 @@ export function CalendarDayColumn({
 
   const positionedSegments = layoutOverlappingSegments(clampedSegments);
 
+  const hoverWebProps =
+    Platform.OS === "web"
+      ? ({
+          onMouseMove: handleMouseMove,
+          onMouseLeave: handleMouseLeave,
+        } as const)
+      : ({} as const);
+
   return (
     <View className="flex-1">
       <Pressable
@@ -287,33 +406,54 @@ export function CalendarDayColumn({
         className="items-center justify-center border-b"
         style={{
           height: HEADER_HEIGHT,
-          borderColor: isSelected ? palette.accent : palette.border,
-          backgroundColor: isSelected ? palette.accentSoft : "transparent",
+          borderColor: palette.border,
+          backgroundColor: "transparent",
         }}
       >
         <Text
           className="text-[10px]"
-          style={{
-            color: isSelected ? palette.accent : palette.muted,
-            fontFamily: Fonts.mono,
-            letterSpacing: 1.1,
-          }}
+          color={isSelected ? "accent" : "muted"}
+          style={{ letterSpacing: 1.1 }}
         >
           {getDayLabel(date)}
         </Text>
-        <Text
-          className="text-sm"
-          style={{
-            color: palette.text,
-            fontFamily: Fonts.sans,
-            fontWeight: "600",
-          }}
-        >
-          {getDateLabel(date)}
-        </Text>
+        {isSelected ? (
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: palette.accent,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text className="text-sm" color="inverted" weight="600">
+              {getDateLabel(date)}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text className="text-sm" weight="600">
+              {getDateLabel(date)}
+            </Text>
+            {isToday ? (
+              <View
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: palette.accent,
+                  marginTop: 2,
+                }}
+              />
+            ) : null}
+          </>
+        )}
       </Pressable>
 
       <Pressable
+        {...(hoverWebProps as object)}
         className="relative"
         style={{
           height: DAY_HEIGHT,
@@ -326,6 +466,28 @@ export function CalendarDayColumn({
           onPressSlot(dayStart + roundedMinutes * MINUTE_MS);
         }}
       >
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: WORK_HOURS_START * HOUR_ROW_HEIGHT,
+            backgroundColor: "rgba(0,0,0,0.12)",
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: WORK_HOURS_END * HOUR_ROW_HEIGHT,
+            height: (24 - WORK_HOURS_END) * HOUR_ROW_HEIGHT,
+            backgroundColor: "rgba(0,0,0,0.12)",
+          }}
+        />
         {Array.from({ length: 24 }).map((_, hour) => (
           <View
             key={hour}
@@ -336,6 +498,9 @@ export function CalendarDayColumn({
             }}
           />
         ))}
+        {showTimeLine ? (
+          <CurrentTimeLine nowMs={nowMs} dayStart={dayStart} />
+        ) : null}
         {positionedSegments.map((segment) => {
           const offsetMinutes = (segment.startAt - dayStart) / MINUTE_MS;
           const durationMs = Math.max(15 * MINUTE_MS, segment.endAt - segment.startAt);
@@ -359,6 +524,13 @@ export function CalendarDayColumn({
             />
           );
         })}
+        {Platform.OS === "web" && hoverSlot ? (
+          <HoverIndicator
+            top={hoverSlot.top}
+            palette={palette}
+            label={formatTime(dayStart + hoverSlot.minutes * MINUTE_MS)}
+          />
+        ) : null}
       </Pressable>
     </View>
   );
@@ -371,7 +543,7 @@ function TimeGutter({ palette }: { palette: ColorPalette }) {
       style={{
         width: TIME_GUTTER_WIDTH,
         borderColor: palette.border,
-        backgroundColor: palette.surface,
+        backgroundColor: palette.surfaceStrong,
       }}
     >
       <View className="border-b" style={{ borderColor: palette.border, height: HEADER_HEIGHT }} />
@@ -381,11 +553,10 @@ function TimeGutter({ palette }: { palette: ColorPalette }) {
           <Text
             key={hour}
             className="absolute text-[10px]"
+            color="muted"
             style={{
               top: hour * HOUR_ROW_HEIGHT - 6,
               left: 6,
-              color: palette.muted,
-              fontFamily: Fonts.mono,
             }}
           >
             {getHourLabel(hour)}
@@ -400,6 +571,7 @@ function TimeGutter({ palette }: { palette: ColorPalette }) {
 type BaseCalendarProps = {
   palette: ColorPalette;
   selectedDate: Date;
+  nowMs?: number;
   onSelectDay: (date: Date) => void;
   onPressSlot: (startAt: number) => void;
   onPressTask: (taskId: string) => void;
@@ -413,6 +585,7 @@ export function WeekCalendar({
   fluid = false,
   palette,
   selectedDate,
+  nowMs,
   onSelectDay,
   onPressSlot,
   onPressTask,
@@ -431,6 +604,7 @@ export function WeekCalendar({
         palette={palette}
         segments={segmentsByDay[dayKey(day)] ?? []}
         isSelected={dayKey(day) === dayKey(selectedDate)}
+        nowMs={nowMs}
         onSelectDay={onSelectDay}
         onPressSlot={onPressSlot}
         onPressTask={onPressTask}
@@ -472,6 +646,7 @@ export function WeekCalendar({
 export function DayCalendar({
   palette,
   selectedDate,
+  nowMs,
   onSelectDay,
   onPressSlot,
   onPressTask,
@@ -494,6 +669,7 @@ export function DayCalendar({
             palette={palette}
             segments={segmentsByDay[selectedKey] ?? []}
             isSelected
+            nowMs={nowMs}
             onSelectDay={onSelectDay}
             onPressSlot={onPressSlot}
             onPressTask={onPressTask}

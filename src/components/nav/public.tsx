@@ -1,17 +1,15 @@
 import { Link, type Href } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Fonts } from "@/constants/theme";
+import { Text } from "@/components/ui/text";
 import { useColorPalette } from "@/hooks/use-color-palette";
 
 function NavLink({ href, label }: { href: Href; label: string }) {
-  const palette = useColorPalette();
-
   return (
     <Link href={href} asChild>
       <Pressable className="h-9 items-center justify-center px-2">
-        <Text className="text-sm" style={{ color: palette.muted, fontFamily: Fonts.sans, fontWeight: "500" }}>
+        <Text className="text-sm" color="muted" weight="500">
           {label}
         </Text>
       </Pressable>
@@ -45,7 +43,7 @@ export function PublicNavigation() {
               >
                 <View className="h-3 w-3 rounded-sm" style={{ backgroundColor: palette.accent }} />
               </View>
-              <Text className="text-base" style={{ color: palette.text, fontFamily: Fonts.sans, fontWeight: "600" }}>
+              <Text className="text-base" weight="600">
                 Timeslip
               </Text>
             </Pressable>
@@ -63,7 +61,7 @@ export function PublicNavigation() {
                   backgroundColor: pressed ? palette.text : palette.accent,
                 })}
               >
-                <Text className="text-xs" style={{ color: palette.surfaceStrong, fontFamily: Fonts.sans, fontWeight: "600" }}>
+                <Text className="text-xs" color="inverted" weight="600">
                   Get Started
                 </Text>
               </Pressable>

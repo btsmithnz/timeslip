@@ -1,8 +1,7 @@
 import { Link, type Href } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
-import { Fonts } from "@/constants/theme";
-import { useColorPalette } from "@/hooks/use-color-palette";
+import { Text } from "@/components/ui/text";
 
 export function LinkRow({
   prompt,
@@ -13,18 +12,13 @@ export function LinkRow({
   label: string;
   href: Href;
 }) {
-  const palette = useColorPalette();
-
   return (
     <View className="flex-row flex-wrap items-center gap-2">
-      <Text className="text-sm" style={{ color: palette.muted }}>
+      <Text className="text-sm" color="muted">
         {prompt}
       </Text>
       <Link href={href}>
-        <Text
-          className="text-sm"
-          style={{ color: palette.accent, fontFamily: Fonts.sans, fontWeight: "500" }}
-        >
+        <Text className="text-sm" color="accent" weight="500">
           {label}
         </Text>
       </Link>

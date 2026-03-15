@@ -2,14 +2,13 @@ import { useForm } from "@tanstack/react-form";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Platform,
   Pressable,
   ScrollView,
-  Text,
   TextInput,
   View,
   useWindowDimensions,
@@ -31,8 +30,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { InlineNotice } from "@/components/ui/inline-notice";
+import { Text } from "@/components/ui/text";
 import { Fonts } from "@/constants/theme";
 import { useColorPalette } from "@/hooks/use-color-palette";
+import { HOUR_ROW_HEIGHT } from "@/components/time/calendar";
 import {
   DAY_MS,
   addDays,
@@ -134,6 +135,8 @@ export default function HomeScreen() {
   const [creatingQuickProject, setCreatingQuickProject] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modalState, setModalState] = useState<ModalState>({ visible: false });
+  const scrollRef = useRef<ScrollView>(null);
+  const hasAutoScrolled = useRef(false);
 
   useEffect(() => {
     if (!hasManualViewMode) {
@@ -166,6 +169,17 @@ export default function HomeScreen() {
   const projects = data?.projects;
   const weekTasks = data?.tasks;
   const activeTasks = data?.activeTasks;
+
+  useEffect(() => {
+    if (data && !hasAutoScrolled.current && scrollRef.current) {
+      hasAutoScrolled.current = true;
+      const currentHour = dayjs().hour();
+      const estimatedCardHeight = 220;
+      const headerHeight = 60;
+      const y = estimatedCardHeight + headerHeight + (currentHour - 1) * HOUR_ROW_HEIGHT;
+      scrollRef.current.scrollTo({ y: Math.max(0, y), animated: false });
+    }
+  }, [data]);
 
   const clientById = useMemo(
     () =>
@@ -620,21 +634,22 @@ export default function HomeScreen() {
   return (
     <View className="flex-1" style={{ backgroundColor: palette.background }}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{
           paddingHorizontal: 14,
           paddingTop: 14,
           paddingBottom: Math.max(insets.bottom + 20, 26),
         }}
       >
-        <View className="gap-4">
+        <View className="gap-3">
           <View
-            className="overflow-hidden rounded-3xl border px-5 py-5 md:px-6 md:py-6"
+            className="overflow-hidden rounded-2xl border px-5 py-5 md:px-6 md:py-6"
             style={{
               borderColor: palette.border,
               backgroundColor: palette.surfaceStrong,
               shadowColor: palette.shadow,
-              shadowOpacity: 0.14,
-              shadowRadius: 16,
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
               shadowOffset: { width: 0, height: 9 },
               elevation: 3,
             }}
@@ -642,17 +657,7 @@ export default function HomeScreen() {
             <View className="flex-row flex-wrap items-end gap-3">
               <quickStartForm.Field name="title">
                 {(field) => (
-                  <View className="min-w-64 flex-1 gap-2">
-                    <Text
-                      className="text-[11px] uppercase"
-                      style={{
-                        color: palette.muted,
-                        fontFamily: Fonts.mono,
-                        letterSpacing: 1.3,
-                      }}
-                    >
-                      Task
-                    </Text>
+                  <View className="min-w-64 flex-1">
                     <TextInput
                       value={field.state.value}
                       onBlur={field.handleBlur}
@@ -661,10 +666,11 @@ export default function HomeScreen() {
                       placeholder="What are you working on?"
                       placeholderTextColor={palette.muted}
                       editable={!busy}
-                      className="min-h-11 rounded-xl border px-3.5 py-3 text-sm"
+                      className="min-h-11 px-1 py-3 text-base outline-none"
                       style={{
-                        backgroundColor: palette.input,
-                        borderColor: palette.inputBorder,
+                        backgroundColor: "transparent",
+                        borderBottomWidth: 1,
+                        borderColor: palette.borderSoft,
                         color: palette.text,
                         fontFamily: Fonts.sans,
                         fontWeight: "500",
@@ -691,6 +697,7 @@ export default function HomeScreen() {
                       <View className="w-full md:w-52" style={{ zIndex: 130 }}>
                         <Combobox
                           label="Client"
+                          hideLabel
                           value={values.clientId}
                           options={quickClientOptions}
                           placeholder="Select client"
@@ -749,6 +756,7 @@ export default function HomeScreen() {
                       <View className="w-full md:w-52" style={{ zIndex: 120 }}>
                         <Combobox
                           label="Project"
+                          hideLabel
                           value={values.projectId}
                           options={quickProjectOptions}
                           placeholder={
@@ -803,12 +811,12 @@ export default function HomeScreen() {
                       </View>
 
                       <Pressable
-                        className="h-11 w-11 items-center justify-center self-end rounded-full"
+                        className="h-12 w-12 items-center justify-center self-end rounded-full"
                         style={({ pressed }) => ({
                           backgroundColor: pressed ? palette.text : palette.accent,
                           shadowColor: palette.shadow,
-                          shadowOpacity: 0.22,
-                          shadowRadius: 12,
+                          shadowOpacity: 0.35,
+                          shadowRadius: 20,
                           shadowOffset: { width: 0, height: 4 },
                           elevation: 4,
                           opacity: busy ? 0.7 : 1,
@@ -820,7 +828,7 @@ export default function HomeScreen() {
                       >
                         <FontAwesome6
                           name="play"
-                          size={13}
+                          size={15}
                           color={palette.surfaceStrong}
                         />
                       </Pressable>
@@ -860,18 +868,11 @@ export default function HomeScreen() {
                       <Text
                         numberOfLines={1}
                         className="flex-1 text-sm"
-                        style={{
-                          color: palette.text,
-                          fontFamily: Fonts.sans,
-                          fontWeight: "600",
-                        }}
+                        weight="600"
                       >
                         {timer.title}
                       </Text>
-                      <Text
-                        className="text-sm"
-                        style={{ color: palette.accent }}
-                      >
+                      <Text className="text-sm" color="accent">
                         {formatDuration(nowMs - timer.startAt)}
                       </Text>
                       <Pressable
@@ -898,10 +899,7 @@ export default function HomeScreen() {
                         />
                       </Pressable>
                     </View>
-                    <Text
-                      className="mt-1 text-xs leading-5"
-                      style={{ color: palette.muted }}
-                    >
+                    <Text className="mt-1 text-xs leading-5" color="muted">
                       {`${timer.clientName} - ${timer.projectName}`}
                     </Text>
                   </Pressable>
@@ -910,45 +908,25 @@ export default function HomeScreen() {
             ) : null}
           </View>
 
-          <View className="flex-row flex-wrap items-center justify-between gap-3 px-1">
-            <View className="min-w-56 flex-1">
-              <Text
-                className="text-[11px] uppercase"
-                style={{
-                  color: palette.muted,
-                  fontFamily: Fonts.mono,
-                  letterSpacing: 1.3,
-                }}
-              >
-                Calendar
-              </Text>
-              <View className="mt-1 max-w-full flex-row items-center self-start gap-2">
-                <Text
-                  numberOfLines={1}
-                  className="text-base"
-                  style={{
-                    color: palette.text,
-                    fontFamily: Fonts.sans,
-                    fontWeight: "600",
-                    flexShrink: 1,
-                  }}
-                >
-                  {calendarTitle}
-                </Text>
-                {isTimersLoading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={palette.muted}
-                    accessibilityLabel="Loading timers"
-                  />
-                ) : null}
-              </View>
-            </View>
-
-            <View className="flex-row flex-wrap items-center justify-end gap-2">
+          <View className="flex-row items-center gap-2 px-1">
               <ChevronNavButton
                 direction="left"
                 onPress={navigatePrevious}
+                color={palette.text}
+                borderColor={palette.border}
+                backgroundColor="transparent"
+              />
+              <Text
+                numberOfLines={1}
+                className="text-lg"
+                weight="700"
+                style={{ flexShrink: 1 }}
+              >
+                {calendarTitle}
+              </Text>
+              <ChevronNavButton
+                direction="right"
+                onPress={navigateNext}
                 color={palette.text}
                 borderColor={palette.border}
                 backgroundColor="transparent"
@@ -959,13 +937,16 @@ export default function HomeScreen() {
                 size="sm"
                 onPress={() => setSelectedDate(dayjs().toDate())}
               />
-              <ChevronNavButton
-                direction="right"
-                onPress={navigateNext}
-                color={palette.text}
-                borderColor={palette.border}
-                backgroundColor="transparent"
-              />
+              {isTimersLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={palette.muted}
+                  accessibilityLabel="Loading timers"
+                />
+              ) : null}
+
+              <View className="flex-1" />
+
               <View
                 className="flex-row rounded-xl border p-1"
                 style={{
@@ -986,14 +967,8 @@ export default function HomeScreen() {
                 >
                   <Text
                     className="text-xs"
-                    style={{
-                      color:
-                        viewMode === "day"
-                          ? palette.surfaceStrong
-                          : palette.muted,
-                      fontFamily: Fonts.sans,
-                      fontWeight: "600",
-                    }}
+                    color={viewMode === "day" ? "inverted" : "muted"}
+                    weight="600"
                   >
                     Day
                   </Text>
@@ -1011,20 +986,13 @@ export default function HomeScreen() {
                 >
                   <Text
                     className="text-xs"
-                    style={{
-                      color:
-                        viewMode === "week"
-                          ? palette.surfaceStrong
-                          : palette.muted,
-                      fontFamily: Fonts.sans,
-                      fontWeight: "600",
-                    }}
+                    color={viewMode === "week" ? "inverted" : "muted"}
+                    weight="600"
                   >
                     Week
                   </Text>
                 </Pressable>
               </View>
-            </View>
           </View>
 
           {viewMode === "week" ? (
@@ -1033,6 +1001,7 @@ export default function HomeScreen() {
               fluid={isDesktop}
               palette={palette}
               selectedDate={selectedDate}
+              nowMs={nowMs}
               onSelectDay={setSelectedDate}
               segmentsByDay={calendarSegmentsByDay}
               onPressSlot={(startAt) => {
@@ -1047,6 +1016,7 @@ export default function HomeScreen() {
             <DayCalendar
               palette={palette}
               selectedDate={startOfDay(selectedDate)}
+              nowMs={nowMs}
               onSelectDay={setSelectedDate}
               segmentsByDay={calendarSegmentsByDay}
               onPressSlot={(startAt) => {

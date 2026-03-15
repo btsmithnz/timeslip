@@ -17,6 +17,8 @@ export default function AppTabsLayout() {
   const tabBarWidth = 140;
   const tabBarLeft = Math.max((width - tabBarWidth) / 2, 16);
 
+  const isDark = colorScheme === "dark";
+
   return (
     <Tabs
       screenLayout={({ children }) => (
@@ -34,12 +36,11 @@ export default function AppTabsLayout() {
         </View>
       )}
       screenOptions={{
-        tabBarActiveTintColor:
-          colorScheme === "dark"
-            ? Colors.light.text
-            : tabPalette.tabIconSelected,
+        tabBarActiveTintColor: isDark
+          ? "#eef0f5"
+          : tabPalette.tabIconSelected,
         tabBarInactiveTintColor: tabPalette.tabIconDefault,
-        tabBarActiveBackgroundColor: "#FFFFFF",
+        tabBarActiveBackgroundColor: isDark ? "#1e2430" : "#FFFFFF",
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarShowLabel: false,
@@ -64,9 +65,9 @@ export default function AppTabsLayout() {
           overflow: "hidden",
           paddingHorizontal: 4,
           paddingVertical: 2,
-          backgroundColor: colorScheme === "dark" ? "#202325" : "#F3F4F6",
+          backgroundColor: isDark ? "#111520" : "#eaecf2",
           shadowColor: "#000",
-          shadowOpacity: 0.14,
+          shadowOpacity: isDark ? 0.4 : 0.14,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: 8 },
           elevation: 8,
