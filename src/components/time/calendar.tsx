@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Fonts } from "@/constants/theme";
@@ -54,21 +55,15 @@ function getSlotPressY(nativeEvent: SlotPressNativeEvent) {
 }
 
 function getDayLabel(date: Date) {
-  return new Intl.DateTimeFormat(undefined, { weekday: "short" })
-    .format(date)
-    .toUpperCase();
+  return dayjs(date).format("ddd").toUpperCase();
 }
 
 function getDateLabel(date: Date) {
-  return String(date.getDate()).padStart(2, "0");
+  return dayjs(date).format("DD");
 }
 
 function getHourLabel(hour: number) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(2025, 0, 1, hour, 0, 0, 0));
+  return dayjs().startOf("day").add(hour, "hour").format("h:mm A");
 }
 
 function TaskBlock({

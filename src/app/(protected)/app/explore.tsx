@@ -5,6 +5,7 @@ import {
   usePaginatedQuery,
   useQuery,
 } from "convex/react";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -71,37 +72,16 @@ export default function InvoicesScreen() {
   );
 
   const modalInitialValues = useMemo(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const now = dayjs();
+    const monthStart = now.startOf("month");
 
     return {
-      startDateInput: formatDateInput(monthStart.getTime()),
-      endDateInput: formatDateInput(now.getTime()),
+      startDateInput: formatDateInput(monthStart.valueOf()),
+      endDateInput: formatDateInput(now.valueOf()),
       clientId: clientOptions[0]?._id ?? "",
       projectId: "",
     };
   }, [clientOptions]);
-
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    [],
-  );
-  const dateTimeFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-    [],
-  );
 
   async function handleCreateInvoice(values: InvoiceModalSubmitValues) {
     const selectedClient = clients.find(
@@ -234,11 +214,11 @@ export default function InvoicesScreen() {
 
         <View className="gap-3">
           {results.map((invoice) => {
-            const rangeLabel = `${dateFormatter.format(new Date(invoice.startAt))} - ${dateFormatter.format(
-              new Date(invoice.endAt),
-            )}`;
-            const createdLabel = dateTimeFormatter.format(
-              new Date(invoice._creationTime),
+            const rangeLabel = `${dayjs(invoice.startAt).format("MMM D, YYYY")} - ${dayjs(
+              invoice.endAt,
+            ).format("MMM D, YYYY")}`;
+            const createdLabel = dayjs(invoice._creationTime).format(
+              "MMM D, YYYY h:mm A",
             );
             const amountLabel =
               invoice.amount > 0 ? `Amount ${invoice.amount}` : "Amount pending";

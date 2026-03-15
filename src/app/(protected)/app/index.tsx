@@ -1,5 +1,6 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -114,12 +115,12 @@ export default function HomeScreen() {
   const isDesktop = width >= 768;
   const { isAuthenticated } = useConvexAuth();
 
-  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(() => dayjs().toDate());
   const [viewMode, setViewMode] = useState<ViewMode>(
     isDesktop ? "week" : "day",
   );
   const [hasManualViewMode, setHasManualViewMode] = useState(false);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => dayjs().valueOf());
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [modalState, setModalState] = useState<ModalState>({ visible: false });
@@ -131,7 +132,7 @@ export default function HomeScreen() {
   }, [hasManualViewMode, isDesktop]);
 
   useEffect(() => {
-    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    const timer = setInterval(() => setNowMs(dayjs().valueOf()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -210,7 +211,7 @@ export default function HomeScreen() {
   function openCreateModal(startAt: number, endAt?: number) {
     const safeStartAt = Number.isFinite(startAt)
       ? startAt
-      : roundToQuarterHour(Date.now());
+      : roundToQuarterHour(dayjs().valueOf());
     const safeEndAt =
       typeof endAt === "number" && Number.isFinite(endAt) && endAt > safeStartAt
         ? endAt
@@ -494,7 +495,7 @@ export default function HomeScreen() {
         ...(task.description ? { description: task.description } : {}),
         projectId: task.project,
         startAt: task.startAt,
-        endAt: Math.max(Date.now(), task.startAt + 1),
+        endAt: Math.max(dayjs().valueOf(), task.startAt + 1),
       });
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -559,7 +560,7 @@ export default function HomeScreen() {
               <View className="w-full md:w-auto md:min-w-44">
                 <Button
                   label="Start Timer"
-                  onPress={() => openCreateModal(Date.now())}
+                  onPress={() => openCreateModal(dayjs().valueOf())}
                 />
               </View>
             </View>
@@ -691,7 +692,7 @@ export default function HomeScreen() {
                 label="Today"
                 variant="secondary"
                 size="sm"
-                onPress={() => setSelectedDate(new Date())}
+                onPress={() => setSelectedDate(dayjs().toDate())}
               />
               <ChevronNavButton
                 direction="right"
